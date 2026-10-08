@@ -1,59 +1,442 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Plants vs Zombies</title>
+    <meta name="description" content="A simplified Plants vs Zombies JavaScript clone with sprite-based animations, plants, zombies, bullets, and sound effects." />
+    <meta property="og:title" content="Plants vs Zombies" />
+    <meta property="og:description" content="A simplified Plants vs Zombies JavaScript clone with sprite-based animations, plants, zombies, bullets, and sound effects." />
 
     <style>
-      body {
+      * {
+        box-sizing: border-box;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      html, body {
         margin: 0;
         padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #0b0f19;
+        font-family: "Impact", "Arial Black", sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
       }
       .container {
-        text-align: center;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
       }
 
       #background {
-        background: url("images/frontyard.png");
+        background: url("images/frontyard.png") no-repeat;
+        background-size: 1024px 626px;
         width: 1024px;
         height: 626px;
+        min-width: 1024px;
+        min-height: 626px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 0 3px #3d2314;
+        border-radius: 4px;
+        transform-origin: center center;
+        transition: transform 0.05s ease-out;
       }
-      div.plant1 {
+
+      /* 5x9 Lawn Grid overlay */
+      #lawn-grid {
         position: absolute;
+        top: 80px;
+        left: 250px;
+        width: 720px;
+        height: 500px;
+        display: grid;
+        grid-template-columns: repeat(9, 80px);
+        grid-template-rows: repeat(5, 100px);
+        z-index: 5;
+      }
+      .grid-cell {
+        width: 80px;
+        height: 100px;
+        cursor: pointer;
+        position: relative;
+      }
+      .grid-cell.highlight {
+        background-color: rgba(255, 255, 255, 0.18);
+        border: 2px dashed rgba(255, 255, 120, 0.6);
+        border-radius: 8px;
+      }
+      .grid-cell.shovel-highlight {
+        background-color: rgba(255, 60, 60, 0.22);
+        border: 2px dashed rgba(255, 80, 80, 0.8);
+        border-radius: 8px;
+      }
+
+      /* Seed Bank (Top-Left) */
+      #seed-bank {
+        position: absolute;
+        top: 0;
+        left: 10px;
+        height: 84px;
+        background: linear-gradient(180deg, #6a4427 0%, #462c16 100%);
+        border: 3px solid #281709;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        padding: 4px 10px;
+        gap: 6px;
+        z-index: 50;
+      }
+
+      /* Sun Counter */
+      #sun-counter-box {
+        width: 76px;
+        height: 72px;
+        background: #fdf5d6;
+        border: 2px solid #5b3d22;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      #sun-counter-icon {
+        width: 40px;
+        height: 40px;
+        background: url("images/sun.png") no-repeat center;
+        background-size: contain;
+        filter: drop-shadow(0 2px 4px rgba(255, 170, 0, 0.5));
+      }
+      #sun-val {
+        font-size: 19px;
+        color: #3b220e;
+        line-height: 1;
+        margin-top: 2px;
+        font-family: "Impact", "Arial Black", sans-serif;
+        text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.8);
+      }
+
+      /* Seed Packets */
+      .seed-card {
+        width: 52px;
+        height: 72px;
+        background: #d8c29d;
+        border: 2px solid #3c2411;
+        border-radius: 5px;
+        position: relative;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        overflow: hidden;
+        transition: transform 0.1s, filter 0.1s;
+      }
+      .seed-card:hover:not(.disabled):not(.on-cooldown) {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+      }
+      .seed-card.selected {
+        border-color: #ffd700;
+        box-shadow: 0 0 10px #ffd700, inset 0 0 6px #ffd700;
+        transform: translateY(-3px);
+      }
+      .seed-card.disabled {
+        filter: grayscale(0.7) brightness(0.7);
+        cursor: not-allowed;
+      }
+      .seed-card.on-cooldown {
+        cursor: not-allowed;
+      }
+      .seed-img-wrap {
+        width: 44px;
+        height: 44px;
+        margin-top: 3px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .seed-icon {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        transform: scale(0.7);
+        transform-origin: center center;
+      }
+      .seed-cost {
+        position: absolute;
+        bottom: 2px;
+        right: 3px;
+        font-size: 13px;
+        color: #1a0e05;
+        font-weight: bold;
+        line-height: 1;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 1px 3px;
+        border-radius: 3px;
+        border: 1px solid #7c542b;
+      }
+      .cooldown-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 0%;
+        background: rgba(0, 0, 0, 0.65);
+        pointer-events: none;
+        transition: height 0.05s linear;
+      }
+
+      /* Shovel Slot */
+      #shovel-slot {
+        width: 58px;
+        height: 72px;
+        background: #543922;
+        border: 2px solid #2b1a0e;
+        border-radius: 6px;
+        margin-left: 6px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        position: relative;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      #shovel-slot:hover {
+        filter: brightness(1.15);
+      }
+      #shovel-slot.selected {
+        border-color: #ff3333;
+        box-shadow: 0 0 10px #ff4444, inset 0 0 6px #ff3333;
+        transform: translateY(-2px);
+      }
+      #shovel-img {
+        width: 44px;
+        height: 44px;
+        background: url("images/shovel.png") no-repeat center;
+        background-size: contain;
+      }
+
+      /* Sound Controls (Top-Right) */
+      #sound-controls {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        display: flex;
+        gap: 6px;
+        z-index: 50;
+      }
+      .sound-btn {
+        background: #462c16;
+        border: 2px solid #281709;
+        color: #fce79f;
+        font-size: 13px;
+        padding: 4px 8px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: "Impact", sans-serif;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      .sound-btn:hover {
+        background: #5b3d22;
+        color: #fff;
+      }
+
+      /* Wave Progress Meter (Bottom-Right) */
+      #wave-meter {
+        position: absolute;
+        bottom: 8px;
+        right: 14px;
+        width: 190px;
+        height: 34px;
+        background: #462c16;
+        border: 2px solid #281709;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.6);
+        z-index: 40;
+      }
+      #wave-track {
+        flex: 1;
+        height: 12px;
+        background: #201309;
+        border-radius: 6px;
+        position: relative;
+        overflow: visible;
+        border: 1px solid #150a04;
+      }
+      #wave-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #329621, #6bd33b);
+        border-radius: 6px;
+        transition: width 0.3s;
+      }
+      #wave-zombie-head {
+        position: absolute;
+        top: -7px;
+        right: 0%;
+        width: 26px;
+        height: 26px;
+        background: url("images/zombie_head.png") no-repeat center;
+        background-size: contain;
+        transform: translateX(50%);
+        pointer-events: none;
+      }
+      #wave-flag {
+        position: absolute;
+        top: -12px;
+        left: 10px;
+        width: 18px;
+        height: 22px;
+        background: url("images/flag.png") no-repeat center;
+        background-size: contain;
+        pointer-events: none;
+      }
+      #wave-label {
+        font-size: 11px;
+        color: #f7df94;
+        margin-right: 6px;
+        text-shadow: 1px 1px 0 #000;
+      }
+
+      /* Plants */
+      .plant-entity {
+        position: absolute;
+        z-index: 10;
+        pointer-events: none;
+        transition: filter 0.1s;
+      }
+      /* Peashooter (8-frame animated sprite sheet from plants2.png) */
+      div.peashooter {
         background: url("images/plants2.png");
-        background-position: -115px -68px;
+        background-size: 700px;
+        background-position-y: -68px;
         width: 60px;
         height: 68px;
-        background-size: 700px;
+      }
+      /* Sunflower (plants.gif col 1, row 0) */
+      div.sunflower {
+        background: url("images/plants.gif");
+        background-position: -60px 0px;
+        width: 60px;
+        height: 60px;
+        animation: plant-sway 2.4s infinite ease-in-out;
+      }
+      /* Wall-nut (plants.gif col 3, row 0) */
+      div.wallnut {
+        background: url("images/plants.gif");
+        background-position: -180px 0px;
+        width: 60px;
+        height: 60px;
+      }
+      div.wallnut.cracked {
+        filter: contrast(1.2) brightness(0.9);
+      }
+      div.wallnut.heavy-cracked {
+        filter: contrast(1.4) brightness(0.8) hue-rotate(-10deg);
+        animation: nut-wobble 0.8s infinite;
+      }
+      /* Potato Mine (plants.gif col 4, row 0) */
+      div.potatomine {
+        background: url("images/plants.gif");
+        background-position: -240px 0px;
+        width: 60px;
+        height: 60px;
+      }
+      div.potatomine.unarmed {
+        transform: translateY(18px) scale(0.7);
+        filter: brightness(0.8);
+      }
+      /* Cherry Bomb (plants.gif col 2, row 0) */
+      div.cherrybomb {
+        background: url("images/plants.gif");
+        background-position: -120px 0px;
+        width: 60px;
+        height: 60px;
+        animation: cherry-fuse 1.2s forwards;
+      }
+      /* Repeater (plants.gif col 7, row 0) */
+      div.repeater {
+        background: url("images/plants.gif");
+        background-position: -420px 0px;
+        width: 60px;
+        height: 60px;
+        animation: plant-sway 2.4s infinite ease-in-out;
+      }
+
+      @keyframes plant-sway {
+        0%, 100% { transform: scale(1) rotate(0deg); }
+        50% { transform: scale(1.03, 0.98) rotate(1.5deg); }
+      }
+      @keyframes nut-wobble {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-2deg); }
+        75% { transform: rotate(2deg); }
+      }
+      @keyframes cherry-fuse {
+        0% { transform: scale(1); filter: brightness(1); }
+        50% { transform: scale(1.15); filter: brightness(1.3) drop-shadow(0 0 8px #f00); }
+        100% { transform: scale(1.3); filter: brightness(1.7) drop-shadow(0 0 15px #ff4500); }
+      }
+
+      /* Ghost plant preview for planting */
+      #plant-ghost {
+        position: absolute;
+        z-index: 15;
+        opacity: 0.6;
+        pointer-events: none;
+        display: none;
+      }
+
+      /* Zombies (monsters.png) */
+      .zombie-entity {
+        position: absolute;
+        width: 128px;
+        height: 128px;
+        background-image: url("images/monsters.png");
+        z-index: 20;
+        pointer-events: none;
       }
       div.zombie1 {
-        position: absolute;
-        background: url("images/monsters.png");
-        background-position: 0px -384px;
-        width: 128px;
-        height: 128px;
+        background-position-y: 0px; /* Variant 1: Browncoat Zombie (Row 0) */
       }
       div.zombie2 {
-        position: absolute;
-        background: url("images/monsters.png");
-        background-position: 0px -256px;
-        width: 128px;
-        height: 128px;
+        background-position-y: -128px; /* Variant 2: Grey Coat Zombie (Row 1) */
       }
-
       div.zombie3 {
-        position: absolute;
-        background: url("images/monsters.png");
-        background-position: 0px -136px;
-        width: 128px;
-        height: 128px;
+        background-position-y: -256px; /* Variant 3: Olive Coat Zombie (Row 2) */
+      }
+      div.zombie4 {
+        background-position-y: -384px; /* Variant 4: Dark Suit Zombie (Row 3) */
+      }
+      .zombie-entity.hit {
+        filter: brightness(2) contrast(1.2);
+      }
+      .zombie-entity.eating {
+        animation: zombie-eat 0.4s infinite;
+      }
+      @keyframes zombie-eat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px) rotate(-1deg); }
       }
 
-      div.zombie4 {
-        position: absolute;
-        background: url("images/monsters.png");
-        background-position: 0px -15px;
-        width: 128px;
-        height: 128px;
-      }
+      /* Bullets (plants2.png) */
       div.bullet {
         position: absolute;
         background: url("images/plants2.png");
@@ -61,27 +444,257 @@
         width: 30px;
         height: 30px;
         background-size: 700px;
+        z-index: 25;
+        pointer-events: none;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
       }
 
-      #explosion {
+      /* Lawnmowers */
+      div.lawnmower {
+        position: absolute;
+        width: 72px;
+        height: 56px;
+        background: url("images/lawnmower.png") no-repeat center;
+        background-size: contain;
+        z-index: 12;
+        pointer-events: none;
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+      }
+      div.lawnmower.active {
+        animation: mower-spin 0.15s infinite linear;
+      }
+      @keyframes mower-spin {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-2px); }
+        100% { transform: translateY(0); }
+      }
+
+      /* Sun Items */
+      .sun-item {
+        position: absolute;
+        width: 78px;
+        height: 78px;
+        background: url("images/sun.png") no-repeat center;
+        background-size: contain;
+        cursor: pointer;
+        z-index: 60;
+        filter: drop-shadow(0 0 10px rgba(255, 200, 0, 0.7));
+        animation: sun-pulse 2.5s infinite ease-in-out;
+      }
+      @keyframes sun-pulse {
+        0%, 100% { transform: scale(1) rotate(0deg); }
+        50% { transform: scale(1.08) rotate(10deg); filter: drop-shadow(0 0 16px rgba(255, 220, 0, 0.9)); }
+      }
+
+      /* Effects & Splats */
+      .hit-splat {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        background: #75b318;
+        border-radius: 50%;
+        filter: drop-shadow(0 0 6px #88ff00);
+        pointer-events: none;
+        z-index: 30;
+        animation: splat-fade 0.25s forwards;
+      }
+      @keyframes splat-fade {
+        0% { transform: scale(0.6); opacity: 1; }
+        100% { transform: scale(1.6); opacity: 0; }
+      }
+      .spudow-blast {
+        position: absolute;
+        font-size: 32px;
+        color: #ff3300;
+        text-shadow: 2px 2px 0 #ffd700, -2px -2px 0 #fff;
+        pointer-events: none;
+        z-index: 35;
+        font-family: "Impact", sans-serif;
+        animation: pop-text 0.8s forwards;
+      }
+      @keyframes pop-text {
+        0% { transform: scale(0.4) translate(-50%, -50%); opacity: 1; }
+        50% { transform: scale(1.3) translate(-50%, -50%); opacity: 1; }
+        100% { transform: scale(1.5) translate(-50%, -80%); opacity: 0; }
+      }
+
+      /* Announcement Banners */
+      #announcement-banner {
+        position: absolute;
+        top: 240px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 52px;
+        color: #ff2a2a;
+        text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 0 0 20px #ff0000;
+        z-index: 100;
+        pointer-events: none;
         display: none;
+        letter-spacing: 2px;
+      }
+      #announcement-banner.ready-set-plant {
+        color: #ffd700;
+        text-shadow: 3px 3px 0 #7b3800, -3px -3px 0 #7b3800, 0 0 25px #ffaa00;
+      }
+
+      /* Fullscreen Screens: Start, Game Over, Victory */
+      .modal-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1024px;
+        height: 626px;
+        background: rgba(0, 0, 0, 0.75);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 200;
+        backdrop-filter: blur(2px);
+      }
+      .modal-content {
+        background: linear-gradient(180deg, #5c3c1e 0%, #3a220e 100%);
+        border: 4px solid #f6cf7d;
+        border-radius: 16px;
+        padding: 30px 40px;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+        max-width: 580px;
+      }
+      .modal-title {
+        font-size: 44px;
+        color: #ffd54f;
+        text-shadow: 3px 3px 0 #3e2723, 0 0 15px rgba(255, 213, 79, 0.6);
+        margin: 0 0 14px 0;
+        letter-spacing: 1px;
+      }
+      .modal-desc {
+        font-size: 16px;
+        color: #f7e6c4;
+        font-family: "Arial", sans-serif;
+        line-height: 1.5;
+        margin-bottom: 24px;
+        font-weight: normal;
+      }
+      .pvz-btn {
+        background: linear-gradient(180deg, #8bc34a 0%, #558b2f 100%);
+        border: 3px solid #2e7d32;
+        color: #fff;
+        font-family: "Impact", sans-serif;
+        font-size: 24px;
+        padding: 12px 36px;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 2px 2px rgba(255, 255, 255, 0.4);
+        text-shadow: 2px 2px 0 #1b5e20;
+        letter-spacing: 1px;
+        transition: transform 0.1s, filter 0.1s;
+      }
+      .pvz-btn:hover {
+        transform: scale(1.05);
+        filter: brightness(1.15);
+      }
+      .pvz-btn:active {
+        transform: scale(0.98);
       }
     </style>
-    <script src="index.js"></script>
   </head>
 
   <body>
     <div class="container">
       <div id="background">
-        <div id="zombies"></div>
+        <!-- Seed Bank & Sun Counter -->
+        <div id="seed-bank">
+          <div id="sun-counter-box">
+            <div id="sun-counter-icon"></div>
+            <div id="sun-val">150</div>
+          </div>
+          <!-- Seed Cards generated via index.js -->
+          <div id="seed-slots" style="display: flex; gap: 5px;"></div>
+          <!-- Shovel -->
+          <div id="shovel-slot" title="Shovel (Dig up plants)">
+            <div id="shovel-img"></div>
+          </div>
+        </div>
+
+        <!-- Sound Controls -->
+        <div id="sound-controls">
+          <button id="btn-music" class="sound-btn">Music: ON</button>
+          <button id="btn-sfx" class="sound-btn">SFX: ON</button>
+        </div>
+
+        <!-- 5x9 Interactive Lawn Grid -->
+        <div id="lawn-grid"></div>
+
+        <!-- Ghost preview while planting -->
+        <div id="plant-ghost"></div>
+
+        <!-- Entities Layers -->
+        <div id="lawnmowers"></div>
         <div id="plants"></div>
+        <div id="zombies"></div>
         <div id="bullets"></div>
+        <div id="suns"></div>
+        <div id="effects"></div>
+
+        <!-- Wave Progress Bar -->
+        <div id="wave-meter">
+          <span id="wave-label">DAY 1-1</span>
+          <div id="wave-track">
+            <div id="wave-fill"></div>
+            <div id="wave-flag"></div>
+            <div id="wave-zombie-head"></div>
+          </div>
+        </div>
+
+        <!-- Big Banner Announcements -->
+        <div id="announcement-banner">READY... SET... PLANT!</div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="modal-screen">
+          <div class="modal-content">
+            <h1 class="modal-title">PLANTS vs. ZOMBIES</h1>
+            <p class="modal-desc">
+              Zombies are invading your front lawn! Collect falling sun, grow Sunflowers, and plant Peashooters and Wall-nuts to defend your home before the zombies reach your house!
+              <br /><br />
+              <strong>Controls:</strong> Click a seed packet to select it, then click an empty lawn tile to plant. Click falling sun to collect. Select the Shovel to remove plants.
+            </p>
+            <button id="btn-start" class="pvz-btn">START ADVENTURE</button>
+          </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="modal-screen" style="display: none;">
+          <div class="modal-content" style="border-color: #d32f2f;">
+            <h1 class="modal-title" style="color: #ff5252;">THE ZOMBIES ATE YOUR BRAINS!</h1>
+            <p class="modal-desc">
+              The undead made it into your house! Don't let your lawn fall next time.
+            </p>
+            <button id="btn-restart" class="pvz-btn" style="background: linear-gradient(180deg, #e53935 0%, #b71c1c 100%); border-color: #7f0000;">TRY AGAIN</button>
+          </div>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen" class="modal-screen" style="display: none;">
+          <div class="modal-content" style="border-color: #ffd700;">
+            <h1 class="modal-title">LEVEL COMPLETED!</h1>
+            <div style="width: 80px; height: 80px; margin: 0 auto 16px; background: url('images/sun.png') no-repeat center; background-size: contain; filter: drop-shadow(0 0 15px #ffd700);"></div>
+            <p class="modal-desc" id="victory-stats">
+              You defended your front yard and survived all zombie waves!
+            </p>
+            <button id="btn-next" class="pvz-btn">PLAY AGAIN</button>
+          </div>
+        </div>
+
       </div>
-      <div id="explosion"></div>
-      <audio autoplay hidden loop>
-        <source src="bg-music.mp3" type="audio/ogg" />
-        Your browser does not support the audio element.
+
+      <!-- Real Audio elements -->
+      <audio id="bgm" loop>
+        <source src="bg-music.mp3" type="audio/mpeg" />
       </audio>
     </div>
+
+    <script src="index.js"></script>
   </body>
 </html>

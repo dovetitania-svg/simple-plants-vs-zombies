@@ -1,0 +1,8 @@
+{
+  "name": "Plants vs Zombies",
+  "description": "A simplified Plants vs Zombies JavaScript clone with sprite-based animations, plants, zombies, bullets, and sound effects.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

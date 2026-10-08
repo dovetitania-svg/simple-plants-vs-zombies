@@ -1,0 +1,15 @@
+{
+  "name": "plants-vs-zombies",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "lint": "node --check index.js server.js",
+    "build": "echo 'No build step required for static site'"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
