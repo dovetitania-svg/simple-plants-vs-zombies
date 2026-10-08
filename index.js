@@ -218,15 +218,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Zombie Types (Accurate row-based matching from monsters.png) ---
   // monsters.png contains 4 rows of 4 frames each (128x128px):
-  // Row 0 (y = 0px): Browncoat Zombie
-  // Row 1 (y = -128px): Grey Coat Zombie
-  // Row 2 (y = -256px): Olive Coat Zombie
-  // Row 3 (y = -384px): Dark Suit Zombie / Runner
+  // Row 3 (y = -384px): Regular Zombie (Browncoat with blue pants) -> zombie1
+  // Row 1 (y = -128px): Buckethead Zombie (armored with metallic bucket) -> zombie2
+  // Row 2 (y = -256px): Zombie in Dark Suit -> zombie3
+  // Row 0 (y = 0px):    Dancing Zombie (magenta jumpsuit) -> zombie4
   const ZOMBIE_TYPES = {
-    1: { id: 1, name: "Zombie", className: "zombie1", hp: 200, speed: 20 },
-    2: { id: 2, name: "Zombie (Grey Coat)", className: "zombie2", hp: 270, speed: 20 },
-    3: { id: 3, name: "Zombie (Olive Coat)", className: "zombie3", hp: 360, speed: 20 },
-    4: { id: 4, name: "Zombie Runner", className: "zombie4", hp: 200, speed: 30 },
+    1: { id: 1, name: "Regular Zombie", className: "zombie1", hp: 200, speed: 20 },
+    2: { id: 2, name: "Buckethead Zombie", className: "zombie2", hp: 600, speed: 20 },
+    3: { id: 3, name: "Zombie (Dark Suit)", className: "zombie3", hp: 270, speed: 20 },
+    4: { id: 4, name: "Dancing Zombie", className: "zombie4", hp: 250, speed: 26 },
   };
 
   // --- Game State Variables ---
@@ -269,39 +269,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Level Progression Waves
   const SPAWN_TIMELINE = [
-    { time: 18, row: 2, type: 1 },
+    { time: 18, row: 2, type: 1 }, // Regular Zombie
     { time: 38, row: 1, type: 1 },
-    { time: 55, row: 3, type: 2 },
+    { time: 55, row: 3, type: 3 }, // Dark Suit Zombie
     { time: 70, row: 0, type: 1 },
-    { time: 72, row: 4, type: 2 },
-    { time: 92, row: 2, type: 3 },
-    { time: 110, row: 1, type: 2 },
-    { time: 112, row: 3, type: 3 },
+    { time: 72, row: 4, type: 3 },
+    { time: 92, row: 2, type: 2 }, // Buckethead Zombie (First Tank!)
+    { time: 110, row: 1, type: 3 },
+    { time: 112, row: 3, type: 2 }, // Buckethead Zombie
     { time: 130, row: 0, type: 3 },
     { time: 132, row: 4, type: 1 },
-    { time: 145, row: 2, type: 3 },
+    { time: 145, row: 2, type: 2 },
     // Huge Wave Approach Announcement at 160s
     { time: 160, announcement: "A HUGE WAVE OF ZOMBIES IS APPROACHING!" },
     // Wave 1 Spawns at 164s
-    { time: 164, row: 2, type: 4 }, // Runner
-    { time: 164, row: 1, type: 2 },
+    { time: 164, row: 2, type: 4 }, // Dancing Zombie leading the wave
+    { time: 164, row: 1, type: 2 }, // Buckethead Zombie
     { time: 165, row: 3, type: 3 },
     { time: 166, row: 0, type: 1 },
     { time: 166, row: 4, type: 2 },
     // Post Wave trickle
-    { time: 182, row: 1, type: 2 },
-    { time: 184, row: 3, type: 3 },
+    { time: 182, row: 1, type: 3 },
+    { time: 184, row: 3, type: 2 },
     // Final Wave Announcement at 198s
     { time: 198, announcement: "FINAL WAVE!" },
     // Final Wave Spawns at 202s
-    { time: 202, row: 2, type: 4 },
-    { time: 202, row: 0, type: 3 },
-    { time: 203, row: 1, type: 2 },
-    { time: 203, row: 2, type: 3 },
+    { time: 202, row: 2, type: 4 }, // Dancing Zombie
+    { time: 202, row: 0, type: 2 }, // Buckethead Zombie
+    { time: 203, row: 1, type: 3 },
+    { time: 203, row: 2, type: 2 },
     { time: 204, row: 3, type: 3 },
-    { time: 204, row: 4, type: 3 },
+    { time: 204, row: 4, type: 2 },
     { time: 205, row: 1, type: 1 },
-    { time: 205, row: 3, type: 2 },
+    { time: 205, row: 3, type: 1 },
   ];
   let spawnIndex = 0;
   const LEVEL_TOTAL_TIME = 210;
@@ -364,7 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let r = 0; r < ROWS; r++) {
       lawnmowers.push({
         row: r,
-        x: 165,
+        x: 168,
         y: GRID_TOP + r * CELL_HEIGHT + 22,
         active: false,
         used: false,
